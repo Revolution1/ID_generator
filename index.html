@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title></title>
+        <script src="js/jquery.min.js"></script>
+        <script src="js/lodash.min.js"></script>
+        <link rel="stylesheet" href="css/materialize.min.css">
+        <script src="js/materialize.min.js"></script>
+    </head>
+    <body>
+        <div class="container row">
+            <div id="area-choose" class="col s6 m6">
+                <div class="col s4 m4">
+                    <label>省:</label>
+                    <select name="" id="province" class="browser-default">
+                        <option value="">All</option>
+                    </select>
+                </div>
+                <div  id="lc" class="col s4 m4" style="display: none">
+                    <label>市:</label>
+                    <select name="" id="city" class="browser-default">
+                        <option value="">All</option>
+                    </select>
+                </div>
+                <div id='ld' class="col s4 m4" style="display: none">
+                    <label>区:</label>
+                    <select name="" id="district" class="browser-default">
+                        <option value="">All</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col s6 m6">
+                <h1>hahaha</h1>
+            </div>
+        </div>
+
+        <script type="text/javascript">
+            // $(function(){
+                var provinceopt = $('#province');
+                var cityopt = $('#city');
+                var districtopt = $('#district');
+                var cityTree;
+                var db;
+
+                $.getJSON('/city_dict.json',function(json){
+                    cityTree = json.struct;
+                    db = json.db;
+                    function showSelects(){
+                        if(!_.isEmpty(cityTree[provinceopt.val()])){
+                            $('#lc').show();
+                            if(!_.isEmpty(cityTree[provinceopt.val()][cityopt.val()])){
+                                $('#ld').show();
+                            }else{
+                                $('#ld').hide();
+                                districtopt.val('');
+                            }
+                        }else{
+                            $('#ld').hide();
+                            districtopt.val('');
+                            $('#lc').hide();
+                            cityopt.val('');
+                        }
+                    }
+                    $.each(cityTree,function(k,v){
+                        provinceopt.append("<option value='"+k+"'>"+db[k+'0000']+"</option>");
+                    });
+                    provinceopt.change(function(event) {
+                        var province = provinceopt.val();
+                        cityopt.html('<option value="">All</option>');
+                        if(province){
+                            $.each(cityTree[province],function(k,v){
+                                var name;
+                                if (k.length <= 4){
+                                    name = db[k+'00'];
+                                }else{
+                                    name = db[k];
+                                }
+                                cityopt.append("<option value='"+k+"'>"+name+"</option>");
+                            });
+                        }
+                        showSelects();
+                    });
+                    cityopt.change(function(event) {
+                        var city = cityopt.val();
+                        districtopt.html('<option value="">All</option>');
+                        if(city){
+                            $.each(cityTree[provinceopt.val()][city],function(k,v){
+                                districtopt.append("<option value='"+k+"'>"+db[k]+"</option>");
+                            });
+                        }
+                        showSelects();
+                    });
+                });
+
+                function getCityCodes(){
+                    var code = districtopt.val() ? districtopt.val() : (cityopt.val() ? cityopt.val() : provinceopt.val());
+                    switch(code.length){
+                        case 6: return [code];
+                        case 4: return _.keys(cityTree[code.slice(0,2)][code]);
+                        case 2: return _.flatten(_.map(cityTree[code],_.keys));
+                        case 0: return _.filter(_.keys(db),function(s){return !_.endsWith(s,'00');});
+                    }
+                }
+            // });
+        </script>
+    </body>
+</html>
